@@ -8,12 +8,15 @@
 #----------------------------------------------------------
 
 # Start by importing
+from code import interact
+from tracemalloc import start
 import matplotlib
 import setigen as stg
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
 import h5py
+import ipdb
 
 # Grabbing my custom colormap
 cmap_array = np.loadtxt('dusk_cm.txt')
@@ -24,7 +27,7 @@ matplotlib.use( 'tkagg' )
 
 
 # Create a function to produce synthetic waterfalls
-def create_synth_waterfall(drift_rate = 0.15, ran_snr = False, default_snr = 40, f_pix = 128, t_pix = 128, start_pix = 1):
+def create_synth_waterfall(drift_rate = 0.15, start_pix = 1, ran_snr = False, default_snr = 40, f_pix = 128, t_pix = 128):
 
     # Check if snr is supposed to be random
     if ran_snr == True:
@@ -65,3 +68,49 @@ def create_synth_waterfall(drift_rate = 0.15, ran_snr = False, default_snr = 40,
     # Returning signal_data
     return signal_data
 
+# Create list of variables to iterate over
+slopes = [0.3, 0.15, 0.1, -0.1, -0.15, -0.3]
+intercepts = [0, 0, 0, 128, 128, 128]
+
+# Empty list
+plot_data = []
+
+# Looping over columns
+for i in range(6):
+
+    # Determining the slope and intercept
+    slope = slopes[i]
+    intercept = intercepts[i]
+
+    # Empty list for column data
+    column_data = []
+    
+    # Looping over rows, applying a random intensity
+    for k in range(6):
+        # Plotting and appending
+        matrix_data = create_synth_waterfall(drift_rate=slope, start_pix=intercept, ran_snr=True)
+        plot_data.append(matrix_data)
+
+    #plot_data.append(column_data)
+
+fig = plt.figure(figsize=(12,12))
+
+ax = [fig.add_subplot(6,6,i+1) for i in range(36)]
+
+for axes in ax:
+    axes.set_xticklabels([])
+    axes.set_yticklabels([])
+    axes.set_aspect('equal')
+
+for k in range(36):
+
+    plt.sca(ax[k])
+    plt.imshow(plot_data[k], aspect='auto', interpolation='none', cmap=cmap)
+
+fig.subplots_adjust(wspace=0, hspace=0)
+#plt.colorbar()
+plt.show()
+
+print(len(plot_data))
+print(len(plot_data[0]))
+print(len(plot_data[4]))
