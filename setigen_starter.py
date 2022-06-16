@@ -8,7 +8,6 @@
 #----------------------------------------------------------
 
 # Start by importing necessary packages
-from curses import meta
 import matplotlib
 import setigen as stg
 import numpy as np
@@ -20,6 +19,9 @@ import time
 import ipdb
 
 matplotlib.use( 'tkagg' )
+
+cmap_array = np.loadtxt('dusk_cm.txt')
+cmap = matplotlib.colors.ListedColormap(cmap_array[::-1]/255.0)
 
 # Creating a frame
 frame = stg.Frame(fchans=128*u.pixel, tchans=128*u.pixel, df=2.7939677238464355*u.Hz, \
@@ -47,11 +49,11 @@ metadata = np.concatenate((frame.get_data()[:21],frame2.get_data()[21:42],\
                             frame.get_data()[42:63],frame2.get_data()[63:84],\
                             frame.get_data()[84:105],frame2.get_data()[105:]))
 
-plt.imshow(metadata, aspect='auto', interpolation='none', cmap='bone')
+plt.imshow(metadata, aspect='auto', interpolation='none', cmap=cmap)
 
 plt.colorbar()
 plt.xlabel('Frequency (px)')
 plt.ylabel('Time (px)')
 
-plt.savefig('samplePlot.png', bbox_inches='tight')
+plt.savefig('/Users/shockblack/Documents/Research/SETI/SETI-ML/samplePlot.png', bbox_inches='tight')
 plt.show()
