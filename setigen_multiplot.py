@@ -8,8 +8,6 @@
 #----------------------------------------------------------
 
 # Start by importing
-from code import interact
-from tracemalloc import start
 import matplotlib
 import setigen as stg
 import numpy as np
@@ -17,7 +15,9 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 import h5py
 import ipdb
+import time
 
+start_time = time.time()
 # Grabbing my custom colormap
 cmap_array = np.loadtxt('dusk_cm.txt')
 cmap = matplotlib.colors.ListedColormap(cmap_array[::-1]/255.0)
@@ -91,7 +91,6 @@ for i in range(6):
         matrix_data = create_synth_waterfall(drift_rate=slope, start_pix=intercept, ran_snr=True)
         plot_data.append(matrix_data)
 
-    #plot_data.append(column_data)
 
 fig = plt.figure(figsize=(12,12))
 
@@ -109,8 +108,10 @@ for k in range(36):
 
 fig.subplots_adjust(wspace=0, hspace=0)
 #plt.colorbar()
-plt.show()
+#plt.show()
 
 print(len(plot_data))
 print(len(plot_data[0]))
 print(len(plot_data[4]))
+
+print(time.time() - start_time)
