@@ -75,7 +75,7 @@ class HDF5Dataset(Dataset):
         return len(self.get_data_infos('data'))
     
     def _add_data_infos(self, file_path, load_data):
-        with h5py.File(file_path) as h5_file:
+        with h5py.File(file_path, 'r') as h5_file:
             # Walk through all groups, extracting datasets
             for gname, group in h5_file.items():
                 for dname, ds in group.items():
