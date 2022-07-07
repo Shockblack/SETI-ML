@@ -8,6 +8,11 @@
 # Big thank you to Branislav Holländer from Towards Data
 # Science for their article regarding this.
 # https://towardsdatascience.com/hdf5-datasets-for-pytorch-631ff1d750f5
+#
+# NOTE:
+#   ds[()] is the same as ds.value, but for some reason h5py decided to
+#   go away with .value. It makes 0 sense intuitively but it is what it
+#   is.
 # 
 #-----------------------------------------------------------------------
 
@@ -67,8 +72,9 @@ class HDF5Dataset(Dataset):
             x = torch.from_numpy(x)
 
         # get label
-        y = self.get_data("label", index)
+        y = np.array([self.get_data("label", index)])
         y = torch.from_numpy(y)
+        y = y.to(torch.long)[0]
         return (x, y)
 
     def __len__(self):
@@ -83,12 +89,12 @@ class HDF5Dataset(Dataset):
                     idx = -1
                     if load_data:
                         # add data to the data cache
-                        idx = self._add_to_cache(ds.value, file_path)
+                        idx = self._add_to_cache(ds[()], file_path)
                     
                     # type is derived from the name of the dataset; we expect the dataset
                     # name to have a name such as 'data' or 'label' to identify its type
                     # we also store the shape of the data in case we need it
-                    self.data_info.append({'file_path': file_path, 'type': dname, 'shape': ds.value.shape, 'cache_idx': idx})
+                    self.data_info.append({'file_path': file_path, 'type': dname, 'shape': ds[()].shape, 'cache_idx': idx})
 
     def _load_data(self, file_path):
         """Load data to the cache given the file
@@ -100,7 +106,7 @@ class HDF5Dataset(Dataset):
                 for dname, ds in group.items():
                     # add data to the data cache and retrieve
                     # the cache index
-                    idx = self._add_to_cache(ds.value, file_path)
+                    idx = self._add_to_cache(ds[()], file_path)
 
                     # find the beginning index of the hdf5 file we are looking for
                     file_idx = next(i for i,v in enumerate(self.data_info) if v['file_path'] == file_path)

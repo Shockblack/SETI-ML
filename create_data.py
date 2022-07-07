@@ -67,7 +67,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
             # Adding a signal to the on frame
             signal = on_frame.add_signal(stg.constant_path(f_start=on_frame.get_frequency(index=random_start), \
                                     drift_rate=dr*u.Hz/u.s), \
-                                    stg.constant_t_profile(), \
+                                    stg.constant_t_profile(level=5), \
                                     stg.gaussian_f_profile(width=random_width*u.Hz), \
                                     stg.constant_bp_profile(level=1))
             
@@ -75,18 +75,18 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
             off_frame_1 = stg.Frame(fchans=128*u.pixel, tchans=21*u.pixel, df=2.7939677238464355*u.Hz, \
                             dt=18.253611008*u.s, fch1=6095.214842353016*u.MHz)
                             
-            noise = off_frame_1.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_1.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
             # Second off target frame
             off_frame_2 = stg.Frame(fchans=128*u.pixel, tchans=21*u.pixel, df=2.7939677238464355*u.Hz, \
                           dt=18.253611008*u.s, fch1=6095.214842353016*u.MHz)
 
-            noise = off_frame_2.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_2.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
             off_frame_3 = stg.Frame(fchans=128*u.pixel, tchans=23*u.pixel, df=2.7939677238464355*u.Hz, \
                           dt=18.253611008*u.s, fch1=6095.214842353016*u.MHz) 
             
-            noise = off_frame_3.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_3.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
             # group and data naming
             group_name = 'clean_'+str(i+1)+'_'+str(dr_num)
@@ -99,7 +99,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
             img[105:,:] = off_frame_3.get_data().reshape(23,1,128)
 
             grp.create_dataset('data', data=np.array(img, dtype=np.float32))
-            grp.create_dataset('label', data=np.array([label_ind]))
+            grp.create_dataset('label', data=np.array(label_ind, dtype=np.int32))
             # data_list.append(img)
             # label_list.append(dr)
 
@@ -128,7 +128,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
             # Adding a signal to the on frame
             signal = on_frame.add_signal(stg.constant_path(f_start=on_frame.get_frequency(index=random_start), \
                                     drift_rate=dr*u.Hz/u.s), \
-                                    stg.constant_t_profile(), \
+                                    stg.constant_t_profile(level=5), \
                                     stg.gaussian_f_profile(width=random_width*u.Hz), \
                                     stg.constant_bp_profile(level=1))
             
@@ -145,7 +145,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
                                      stg.box_f_profile(width=20*u.Hz),
                                      stg.constant_bp_profile(level=1))
             
-            noise = off_frame_1.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_1.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
             # Second off target frame
             off_frame_2 = stg.Frame(fchans=128*u.pixel, tchans=21*u.pixel, df=2.7939677238464355*u.Hz, \
@@ -160,7 +160,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
                                      stg.box_f_profile(width=20*u.Hz),
                                      stg.constant_bp_profile(level=1))
 
-            noise = off_frame_2.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_2.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
             off_frame_3 = stg.Frame(fchans=128*u.pixel, tchans=23*u.pixel, df=2.7939677238464355*u.Hz, \
                           dt=18.253611008*u.s, fch1=6095.214842353016*u.MHz)
@@ -174,7 +174,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
                                      stg.box_f_profile(width=20*u.Hz),
                                      stg.constant_bp_profile(level=1))
             
-            noise = off_frame_3.add_noise(x_mean=0.5, x_std = 0.1, noise_type = np.random.choice(['normal', 'chi2']))
+            noise = off_frame_3.add_noise(x_mean=12, x_std = 1, noise_type = np.random.choice(['normal', 'chi2']))
 
              # group and data naming
             group_name = 'noisy_'+str(i+1)+'_'+str(dr_num)
@@ -187,7 +187,7 @@ with h5py.File(data_path + datafile_name, 'w') as hf:
             img[105:,:] = off_frame_3.get_data().reshape(23,1,128)
 
             grp.create_dataset('data', data=np.array(img, dtype=np.float32))
-            grp.create_dataset('label', data=np.array([label_ind]))
+            grp.create_dataset('label', data=np.array(label_ind, dtype=np.int32))
     
     hf.close()
 
