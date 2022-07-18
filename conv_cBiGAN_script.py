@@ -17,12 +17,12 @@ import matplotlib.pyplot as plt
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # dataset preparation
-def load_dataset(batch_size = 256, path = "/datax/scratch/zelakiewicz/"):
+def load_dataset(batch_size = 512, path = "/datax/scratch/zelakiewicz/"):
     dataset = HDF5Dataset(file_path=path , recursive=False, load_data=True, transform=transforms.ToTensor())
 
     train_dataset, test_dataset = random_split(dataset, [25000, 5000])
    
-    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     return train_loader, test_loader
 
@@ -30,21 +30,18 @@ class Encoder(nn.Module):
     def __init__(self):
         super(Encoder, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(128 * 128, 1024),
+            nn.Conv1d(128 * 128, 1024, 3),
             nn.LeakyReLU(0.2),
-            nn.Linear(1024,512),
-            nn.BatchNorm1d(512),
+            nn.Conv1d(1024,512, 3),
+            nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
-            nn.Linear(512,512),
-            nn.BatchNorm1d(512),
+            nn.Conv1d(512,256, 3),
+            nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
-            nn.Linear(512,256),
-            nn.BatchNorm1d(256),
+            nn.Conv1d(256,128, 3),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2),
-            nn.Linear(256,128),
-            nn.BatchNorm1d(128),
-            nn.LeakyReLU(0.2),
-            nn.Linear(128, 100)
+            nn.Conv1d(128, 50, 3)
         )
         
     def forward(self, X):
@@ -54,21 +51,18 @@ class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(100 + 6, 128),
+            nn.Conv1d(50 + 6, 128, 3),
             nn.ReLU(),
-            nn.Linear(128, 256),
+            nn.Conv1d(128, 256, 3),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Linear(256, 512),
+            nn.Conv1d(256, 512, 3),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Linear(512, 1024),
+            nn.Conv1d(512, 1024, 3),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Linear(1024, 128 * 128),
+            nn.Conv1d(1024, 128 * 128, 3),
             nn.Sigmoid()
         )
         
@@ -80,25 +74,22 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(128 * 128 + 100 + 6, 128),
+            nn.Conv1d(128 * 128 + 50 + 6, 128, 3),
             nn.Dropout(0.4),
             nn.LeakyReLU(0.2),
-            nn.Linear(128,256),
+            nn.Conv1d(128,256, 3),
             nn.Dropout(0.4),
             nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2),
-            nn.Linear(256,512),
-            nn.Dropout(0.4),
-            nn.BatchNorm1d(512),
-            nn.Linear(512,512),
+            nn.Conv1d(256,512, 3),
             nn.Dropout(0.4),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(0.2),
-            nn.Linear(512,1024),
+            nn.Conv1d(512,1024, 3),
             nn.Dropout(0.4),
             nn.BatchNorm1d(1024),
             nn.LeakyReLU(0.2),
-            nn.Linear(1024,1),
+            nn.Conv1d(1024,1, 3),
             nn.Sigmoid()
         )
         
@@ -122,7 +113,7 @@ def init_weights(Layer):
             torch.nn.init.constant_(Layer.bias, 0)
 
 n_epochs = 400
-l_rate = 2e-4
+l_rate = 3e-4
 
 E = Encoder().to(device)
 G = Generator().to(device)
@@ -139,10 +130,6 @@ optimizer_D = torch.optim.Adam(D.parameters(),
                                lr=l_rate, betas=(0.5, 0.999), weight_decay=1e-5)
 
 mnist_train, mnist_test = load_dataset()
-
-lossD_list = []
-lossEG_list = []
-epoch_list = []
 
 for epoch in range(n_epochs):
     D_loss_acc = 0.
@@ -163,8 +150,8 @@ for epoch in range(n_epochs):
         c = torch.zeros(images.size(0), 6, dtype=torch.float32).to(device)
         c[torch.arange(images.size(0)), labels] = 1
         
-        #initialize z from 100-dim U[-1,1]
-        z = torch.rand(images.size(0), 100)
+        #initialize z from 50-dim U[-1,1]
+        z = torch.rand(images.size(0), 50)
         z = z.to(device)
         
         # Start with Discriminator Training
@@ -203,10 +190,6 @@ for epoch in range(n_epochs):
         loss_EG.backward()
         optimizer_EG.step()
 
-    lossD_list.append(D_loss_acc / i)
-    lossEG_list.append(EG_loss_acc / i)
-    epoch_list.append(epoch+1)
-
     if (epoch + 1) % 10 == 0:
         print('Epoch [{}/{}], Avg_Loss_D: {:.4f}, Avg_Loss_EG: {:.4f}'
               .format(epoch + 1, n_epochs, D_loss_acc / i, EG_loss_acc / i))
@@ -220,7 +203,7 @@ for epoch in range(n_epochs):
             real = images[:n_show]
             c = torch.zeros(n_show, 6, dtype=torch.float32).to(device)
             c[torch.arange(n_show), labels[:n_show]] = 1
-            z = torch.rand(n_show, 100)
+            z = torch.rand(n_show, 50)
             z = z.to(device)
             gener = G(z, c).reshape(n_show, 128, 128).cpu().numpy()
             recon = G(E(real), c).reshape(n_show, 128, 128).cpu().numpy()
@@ -242,20 +225,6 @@ for epoch in range(n_epochs):
                 ax[2, i].imshow(recon[i], cmap='gray')
                 ax[2, i].axis('off')
             plt.savefig('figs/epoch_'+str(epoch+1)+'_ol.jpg')
-            plt.clf()
-            
-    
-    if (epoch + 1) % 50 == 0:
-
-        plt.rcParams.update({"figure.figsize": [10, 5]})
-        plt.plot(epoch_list, lossD_list, label="Discriminator")
-        plt.plot(epoch_list, lossEG_list, label="Generator & Encoder")
-        plt.title("Average loss")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.legend()
-        plt.savefig('figs/epoch_'+str(epoch+1)+'_loss.jpg')
-        plt.clf()
 
 torch.save({
             'D_state_dict': D.state_dict(),
