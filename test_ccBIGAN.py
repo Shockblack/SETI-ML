@@ -26,7 +26,7 @@ device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # Setting a bunch of global variables for various purposes
 workers = 8 # number of workers for cpu parallelization
 batch_size = 128 # batch size
-lr = 5e-5 # learning rate
+lr = 2e-5 # learning rate
 n_epochs = 400 # number of epochs
 
 # Size of image, amount of feature maps, latent vector size, and number of channels
@@ -78,18 +78,10 @@ class Generator(nn.Module):
 
         self.generator_lin = nn.Sequential(
             # input is [nz + nf] = [100 + 6]
-            nn.Linear(nz + nf, 128),
-            nn.ReLU(),
-
-            nn.Linear(128, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-
-            nn.Linear(512, 2048),
-            nn.BatchNorm1d(2048),
-            nn.ReLU(),
-
-            nn.Linear(2048, 8 * 8 * ngf * 8),
+            nn.Linear(nz + nf, 512),
+            nn.LeakyReLU(0.2, inplace=True),
+            
+            nn.Linear(512, 8 * 8 * ngf * 8),
         )
 
         self.unflatten = View(dim=1, shape=(ngf*8, 8, 8)) # out: 1024 x 8 x 8
@@ -114,7 +106,7 @@ class Generator(nn.Module):
 
 
     def forward(self, z, c):
-        # Concatonate inputs
+        # Concatenate inputs
         zc = torch.cat([z, c], dim=1)
 
         zc = self.generator_lin(zc)
@@ -244,9 +236,9 @@ D.apply(init_weights)
 
 #optimizers with weight decay
 optimizer_EG = torch.optim.Adam(list(E.parameters()) + list(G.parameters()), 
-                                lr=lr, betas=(0.5, 0.999), weight_decay=1e-5)
+                                lr=lr, betas=(0.9, 0.999), weight_decay=1e-5)
 optimizer_D = torch.optim.Adam(D.parameters(), 
-                               lr=lr, betas=(0.5, 0.999), weight_decay=1e-5)
+                               lr=lr, betas=(0.9, 0.999), weight_decay=1e-5)
 
 # Load in the training and validation datasets
 train_data, test_data = load_dataset()
@@ -335,10 +327,13 @@ for epoch in range(n_epochs):
         with torch.no_grad():
             #generate images from same class as real ones
             real = images[:n_show]
+
             c = torch.zeros(n_show, 6, dtype=torch.float32).to(device)
             c[torch.arange(n_show), labels[:n_show]] = 1
+
             z = torch.rand(n_show, nz)
             z = z.to(device)
+
             gener = G(z, c).reshape(n_show, 128, 128).cpu().numpy()
             recon = G(E(real), c).reshape(n_show, 128, 128).cpu().numpy()
             real = real.reshape(n_show, 128, 128).cpu().numpy()
