@@ -26,12 +26,11 @@ from tqdm import trange
 
 # Total amount of data to generate
 total_data = 15000
-data_per_iter = total_data/12 # Number of data points per iteration | 6 slopes for both noisy and clean = 12
+data_per_iter = int(total_data/12) # Number of data points per iteration | 6 slopes for both noisy and clean = 12
 
 # Determine the data filepath
-data_path = '/datax/scratch/zelakiewicz/15k'
+data_path = '/datax/scratch/zelakiewicz/15k/'
 datafile_name = 'synthetic_'+str(total_data)+'_6_band.h5'
-
 
 # Slopes of the drift rates
 drift_rates = [0.05, 0.15, 0.1, -0.1, -0.15, -0.05]
@@ -73,7 +72,7 @@ def create_off_frame(x_mean, x_std, tchans, rfi):
 
     # If rfi is True, add RFI noise to the frame
     if rfi:
-        signal = frame.add_signal(stg.simple_rfi_path(f_start=on_frame.get_frequency(index=np.random.uniform(0, 128)), \
+        signal = frame.add_signal(stg.simple_rfi_path(f_start=frame.get_frequency(index=np.random.uniform(0, 128)), \
                             drift_rate=0*u.Hz/u.s, spread=np.random.uniform(0, 30)*u.Hz, spread_type='uniform', \
                             rfi_type='random_walk'), stg.constant_t_profile(level=1), \
                             stg.box_f_profile(width=20*u.Hz), stg.constant_bp_profile(level=1))
@@ -115,8 +114,8 @@ def create_on_frame(x_mean, x_std, snr, signal_start, drift_rate, signal_width):
     noise = frame.add_noise(x_mean=x_mean, x_std = x_std, noise_type = np.random.choice(['normal', 'chi2']))
 
     # Add signal to the frame
-    signal = frame.add_constant_signal(f_start=on_frame.get_frequency(index=signal_start), \
-                drift_rate=drift_rate*u.Hz/u.s, level = on_frame.get_intensity(snr=snr), width = signal_width*u.Hz)
+    signal = frame.add_constant_signal(f_start=frame.get_frequency(index=signal_start), \
+                drift_rate=drift_rate*u.Hz/u.s, level = frame.get_intensity(snr=snr), width = signal_width*u.Hz)
 
     return frame
 
