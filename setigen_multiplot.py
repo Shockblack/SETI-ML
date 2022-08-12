@@ -23,7 +23,7 @@ cmap_array = np.loadtxt('dusk_cm.txt')
 cmap = matplotlib.colors.ListedColormap(cmap_array[::-1]/255.0)
 
 # For plotting
-matplotlib.use( 'tkagg' )
+# matplotlib.use('tkagg')
 
 
 # Create a function to produce synthetic waterfalls
@@ -69,7 +69,7 @@ def create_synth_waterfall(drift_rate = 0.15, start_pix = 1, ran_snr = False, de
     return signal_data
 
 # Create list of variables to iterate over
-slopes = [0.3, 0.15, 0.1, -0.1, -0.15, -0.3]
+slopes = [0.05, 0.15, 0.1, -0.1, -0.15, -0.05]
 intercepts = [0, 0, 0, 128, 128, 128]
 
 # Empty list
@@ -109,6 +109,7 @@ for k in range(36):
 fig.subplots_adjust(wspace=0, hspace=0)
 #plt.colorbar()
 #plt.show()
+plt.savefig('samplePlot.png')
 
 print(len(plot_data))
 print(len(plot_data[0]))

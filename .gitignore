@@ -3,3 +3,13 @@ figs/
 test.py
 .ipynb_checkpoints/
 __pycache__
+func_cBiGAN_script.py
+runs/*
+runtime_test.py
+time_test.csv
+models/*
+breakloop_cBiGAN.py
+plot_h5.ipynb
+test_ccBIGAN.py
+samplePlot.png
+conv_cBiGAN_script.py

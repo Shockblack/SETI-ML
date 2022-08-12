@@ -18,14 +18,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Define some global variables
 nz = 100
-batch_size = 512
-beta1 = 0.5
+batch_size = 128
+beta1 = 0.8
 beta2 = 0.999
-n_epochs = 400
-l_rate = 2e-5
+n_epochs = 1000
+l_rate = 3e-4
+
+# Defining figure output dir
+fig_dir = "figs/linear3/epoch_"
 
 # dataset preparation
-def load_dataset(batch_size = batch_size, path = "/datax/scratch/zelakiewicz/"):
+def load_dataset(batch_size = batch_size, path = "/datax/scratch/zelakiewicz/15k/"):
     dataset = HDF5Dataset(file_path=path , recursive=False, load_data=True, transform=transforms.ToTensor())
 
     # Split the dataset into train and test sets
@@ -34,7 +37,7 @@ def load_dataset(batch_size = batch_size, path = "/datax/scratch/zelakiewicz/"):
 
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
    
-    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     return train_loader, test_loader
 
@@ -42,11 +45,11 @@ class Encoder(nn.Module):
     def __init__(self):
         super(Encoder, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(128 * 128, 1024),
+            nn.Linear(128 * 128, 2048),
             nn.LeakyReLU(0.2),
-            # nn.Linear(2048,1024),
-            # nn.BatchNorm1d(1024),
-            # nn.LeakyReLU(0.2),
+            nn.Linear(2048,1024),
+            nn.BatchNorm1d(1024),
+            nn.LeakyReLU(0.2),
             nn.Linear(1024,512),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(0.2),
@@ -80,9 +83,10 @@ class Generator(nn.Module):
             nn.Linear(512, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
-            # nn.Linear(1024, 2048),
-            # nn.BatchNorm1d(2048),
-            nn.Linear(1024, 128 * 128),
+            nn.Linear(1024, 2048),
+            nn.BatchNorm1d(2048),
+            nn.ReLU(),
+            nn.Linear(2048, 128 * 128),
             nn.Sigmoid()
         )
 
@@ -251,7 +255,8 @@ for epoch in range(n_epochs):
         D.eval()
         E.eval()
         G.eval()
-        
+        break
+
         with torch.no_grad():
             #generate images from same class as real ones
             real = images[:n_show]
@@ -279,13 +284,11 @@ for epoch in range(n_epochs):
                 ax[1, i].axis('off')
                 ax[2, i].imshow(recon[i], cmap='gray')
                 ax[2, i].axis('off')
-            plt.savefig('figs/linear2/epoch_'+str(epoch+1)+'_ol.jpg')
+            plt.savefig(fig_dir+str(epoch+1)+'_ol.jpg')
             plt.clf()
-            
-    
-    if (epoch + 1) % 10 == 0 or (epoch + 1) == 1 :
 
-        print('Epoch [{}/{}], Avg_Loss_D: {:.4f}, Avg_Loss_EG: {:.4f}, Acc_EG: {:.4f}, Acc_D: {:.4f}'
+
+        print('Epoch [{}/{}], Avg_Loss_D: {:.4f}, Avg_Loss_EG: {:.4f}'
               .format(epoch + 1, n_epochs, D_loss_acc / i, EG_loss_acc / i, EG_loss_acc, D_loss_acc))
         fig, ax = plt.subplots(figsize=(15, 10))
         # ax2 = ax.twinx()
@@ -308,8 +311,10 @@ for epoch in range(n_epochs):
         # ax2.grid()
 
         plt.tight_layout()
-        plt.savefig('figs/linear2/epoch_'+str(epoch+1)+'_loss.jpg')
+        plt.savefig(fig_dir+str(epoch+1)+'_loss.jpg')
         plt.clf()
+    break
+torch.save(G, "/home/zelakiewicz/code/SETI-ML/models/G_test.pth")
 
 # torch.save({
             # 'D_state_dict': D.state_dict(),
